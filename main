@@ -1,0 +1,89 @@
+#Importación de Librerías
+import pygame
+#Definimos una Clase
+class GAME:
+    def main():
+        #Iniciar pygame
+        pygame.init()
+        #Variables
+        BLANCO = (255, 255, 255)
+        NEGRO = (0, 0, 0)
+        ROJO = (255, 0, 0)
+        VERDE = (0, 255, 0)
+        AZUL = (0, 0, 255)
+        ANCHO = 900
+        ALTO = 650
+        
+        #Resolución de pantalla
+        ventana = pygame.display.set_mode((ANCHO,ALTO))
+        #Titulo de la Ventana
+        pygame.display.set_caption("Paclike")
+        
+        #reloj
+        reloj1=pygame.time.Clock()
+        #Definición de rectangulos
+        #r1=pygame.Rect(pn_x,pn_y,20,30)
+        #r2=pygame.Rect(50,50,50,50)
+        #Constante para evitar que cierre el bucle while
+        salir=False
+        #Datos
+        pn_x=10
+        pn_y=10
+        vn_x=0
+        vn_y=0
+
+        #Bucle Principal
+        while salir!=True:
+            #Eventos
+            for event in pygame.event.get():
+                #Evento para cierre
+                if event.type == pygame.QUIT:
+                    salir=True
+                #Eventos al presionar una tecla
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        salir = False
+                    if event.key == pygame.K_RIGHT:
+                        vn_x = 10
+                    if event.key == pygame.K_LEFT:
+                        vn_x = -10
+                    if event.key == pygame.K_DOWN:
+                        vn_y = 10
+                    if event.key == pygame.K_UP:
+                        vn_y = -10
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_RIGHT:
+                        vn_x = 0
+                    if event.key == pygame.K_LEFT:
+                        vn_x = 0
+                    if event.key == pygame.K_DOWN:
+                        vn_y = 0
+                    if event.key == pygame.K_UP:
+                        vn_y = 0
+                
+
+            #fps
+            reloj1.tick(20)
+            #FPS=20
+            #Lógica
+            pn_x += vn_x
+            pn_y += vn_y
+
+            #color de la ventana
+            ventana.fill(ROJO)
+
+            #Dibujar en pantalla
+            pygame.draw.rect(ventana,VERDE,(pn_x,pn_y,20,20))
+            #pygame.draw.rect(ventana,AZUL,r2)
+            pygame.draw.polygon(ventana,BLANCO,((24,24),(26,24),(26,34),(27,34),
+                                                (25,37),(23,34),(24,34),))
+            pygame.draw.polygon(ventana,AZUL,((50,0),(50,150),(150,150),(150,200),
+                                              (200,200),(200,100),(100,100),(100,50),
+                                              (200,50),(400,50),(400,0)))
+            #refresh de la ventana
+            pygame.display.update()
+
+        #codigo finalizado
+        pygame.quit()
+
+    main()
