@@ -1,89 +1,583 @@
-#Importación de Librerías
 import pygame
-#Definimos una Clase
-class GAME:
-    def main():
-        #Iniciar pygame
-        pygame.init()
-        #Variables
-        BLANCO = (255, 255, 255)
-        NEGRO = (0, 0, 0)
-        ROJO = (255, 0, 0)
-        VERDE = (0, 255, 0)
-        AZUL = (0, 0, 255)
-        ANCHO = 900
-        ALTO = 650
-        
-        #Resolución de pantalla
-        ventana = pygame.display.set_mode((ANCHO,ALTO))
-        #Titulo de la Ventana
-        pygame.display.set_caption("Paclike")
-        
-        #reloj
-        reloj1=pygame.time.Clock()
-        #Definición de rectangulos
-        #r1=pygame.Rect(pn_x,pn_y,20,30)
-        #r2=pygame.Rect(50,50,50,50)
-        #Constante para evitar que cierre el bucle while
-        salir=False
-        #Datos
-        pn_x=10
-        pn_y=10
-        vn_x=0
-        vn_y=0
+import random
+import time
 
-        #Bucle Principal
-        while salir!=True:
-            #Eventos
-            for event in pygame.event.get():
-                #Evento para cierre
-                if event.type == pygame.QUIT:
-                    salir=True
-                #Eventos al presionar una tecla
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        salir = False
-                    if event.key == pygame.K_RIGHT:
-                        vn_x = 10
-                    if event.key == pygame.K_LEFT:
-                        vn_x = -10
-                    if event.key == pygame.K_DOWN:
-                        vn_y = 10
-                    if event.key == pygame.K_UP:
-                        vn_y = -10
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_RIGHT:
-                        vn_x = 0
-                    if event.key == pygame.K_LEFT:
-                        vn_x = 0
-                    if event.key == pygame.K_DOWN:
-                        vn_y = 0
-                    if event.key == pygame.K_UP:
-                        vn_y = 0
+# Inicializar
+pygame.init()
+
+# Medidas
+ANCHO = 1280
+ALTO = 720
+
+# Colores
+BLANCO = (255, 255, 255)
+NEGRO = (0, 0, 0)
+AZUL = (0, 0, 255)
+MARRON = (140, 60, 8)
+
+#Datos
+vidas = 3
+juego_en_curso = True
+direccion = 1
+
+# Imagenes
+fondo = pygame.image.load("fondotres.png")
+jugador_der = pygame.image.load("tejulagarto2.png")
+jugador_izq = pygame.image.load("tejulagarto1.png")
+jugador_aba = pygame.image.load("tejulagarto3.png")
+jugador_arr = pygame.image.load("tejulagarto4.png")
+jugador_img=jugador_der
+jugador_rect = jugador_img.get_rect()
+comida_img = pygame.image.load("huevo.png")
+comida_rect = comida_img.get_rect()
+
+# CREAR UNA FUENTE DE TEXTO PARA EL TITULO CENTRAL
+fuente1 = pygame.font.SysFont("arial black", 30)
+texto = fuente1.render("PAC-LIZARD", True, BLANCO)  # SE CREA OTRA SUPERFICIE PARA QUE TENGA EL TEXTO CENTRAL
+
+# Mapas
+mapas = [
+    # Mapa 1
+    [
+        "XXXXXXXXXXXXXXXXXX",
+        "X       XXX    XX",
+        "X XXX XXXXXXX XXX",
+        "X X   X        X",
+        "X XX XXXXX XXX X",
+        "X              X",
+        "XXXXXXX XXXX  XX",
+        "X              X",
+        "XXXXXXXXXXX XXXX"
+    ],
+    # Mapa 2
+    [
+        "XXXXXXXXXXXXXXXXXX",
+        "X              XX",
+        "X XXXX XXXXXXX XXX",
+        "X X   X        X",
+        "X XX XXXXX XXX X",
+        "X       X      X",
+        "XXXXXXX XXXX  XX",
+        "X              X",
+        "XXXXXXXXXXX XXXX"
+    ],
+    # Mapa 3
+    [
+        "XXXXXXXXXXXXXXXXXX",
+        "X       XXX    XX",
+        "X XXX XXXXXXX XXX",
+        "X X   X        X",
+        "X XX XXXXX XXX X",
+        "X              X",
+        "XXXXXXX XXXX  XX",
+        "X              X",
+        "XXXXX XXXXXXX XXX"
+    ],
+    # Mapa 4
+    [
+        "XXXXXXXXXXXXXXXXXX",
+        "X              XX",
+        "X X   XXXXXXXX XX",
+        "X X   X        X",
+        "X XX XXXXX XXX X",
+        "X       X      X",
+        "XXXXXXX XXXX  XX",
+        "X              X",
+        "XXXXXXXXXXX XXXX"
+    ],
+    # Mapa 5
+    [
+        "XXXXXXXXXXXXXXXXXX",
+        "X       XXX    XX",
+        "X X XXXXXXXX XXXX",
+        "X X   X        X",
+        "X XX XXXXX XXX X",
+        "X              X",
+        "XXXXXXX XXXX  XX",
+        "X              X",
+        "XXXXX XXXXXXX XXX"
+    ]
+]
+
+# Funciones
+
+def dibujar_muro(superficie, rectangulo):
+    pygame.draw.rect(superficie, MARRON, rectangulo)
+
+def construir_mapa(mapa):
+    muros = []
+    x = 0
+    y = 0
+    for muro in mapa:
+        for ladrillo in muro:
+            if ladrillo == "X":
+                muros.append(pygame.Rect(x, y, 80, 80))
+            x += 80
+        x = 0
+        y += 80
+    return muros
+
+def dibujar_muros(superficie, muros):
+    for m in muros:
+        dibujar_muro(superficie, m)
+
+#Dibujar vidas
+def dibujar_vidas():
+    texto_vidas = fuente1.render("Vidas: " + str(vidas), True, BLANCO)
+    posicion_vidas = texto_vidas.get_rect()
+    posicion_vidas.topright = (ANCHO - 10, 10)
+    ventana.blit(texto_vidas, posicion_vidas)
+
+def actualizar_vidas(vidas):
+    if vidas > 0:
+        vidas -= 1
+    return vidas
+
+
+def generar_posicion_comida(muros):
+    while True:
+        comida_rect.x = random.randrange(0, ANCHO - jugador_rect.width)
+        comida_rect.y = random.randrange(0, ALTO - jugador_rect.height)
+        comida_rect.topleft = (comida_rect.x, comida_rect.y)
+
+        if not any(muro.colliderect(comida_rect) for muro in muros):
+            break
+
+# Ventana
+ventana = pygame.display.set_mode((ANCHO, ALTO))
+reloj = pygame.time.Clock()
+
+
+# Datos
+
+nivel_actual = 1
+mapa_actual = mapas[nivel_actual - 1]
+muros = construir_mapa(mapa_actual)
+
+jugador_rect = pygame.Rect(100, 100, 40, 40)
+jugador_rect_vel_x = 0
+jugador_rect_vel_y = 0
+
+
+generar_posicion_comida(muros)  # Generar posición inicial de la comida
+
+# Cargar imagen de fondo
+fondo_menu = pygame.image.load("PACLIZARD.png")
+fondo_menu = pygame.transform.scale(fondo_menu, (ANCHO, ALTO))
+
+# Menú de inicio
+menu_inicio = True
+mensaje_menu = "Pulse cualquier tecla para empezar..."
+
+retraso_segundos = 1
+tiempo_inicio = pygame.time.get_ticks()
+
+while menu_inicio:
+    ventana.blit(fondo_menu, (0, 0))  # Dibujar imagen de fondo
+
+    tiempo_actual = pygame.time.get_ticks()  # Tiempo actual en milisegundos
+    tiempo_transcurrido = tiempo_actual - tiempo_inicio  # Tiempo transcurrido desde el inicio en milisegundos
+    
+    # Verificar si ha pasado el tiempo de retraso
+    if tiempo_transcurrido >= retraso_segundos * 1000:
+        mensaje_inicio = fuente1.render(mensaje_menu, True, BLANCO)
+        ventana.blit(mensaje_inicio, (ANCHO // 2 - mensaje_inicio.get_width() // 2, ALTO // 1.1 - mensaje_inicio.get_height() // 2))
+    pygame.display.update()
+
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            menu_inicio = False
+
+
+
+
+
+                                          #SINOPSIS
+
+# Cargar imagen de fondo para la sinopsis
+fondo_sinopsis = pygame.image.load("PACKLIKE3.png")
+fondo_sinopsis = pygame.transform.scale(fondo_sinopsis, (ANCHO, ALTO))
+
+# Sinopsis del juego
+mensaje_sinopsis = "Come huevos, comiendo los huevos de los granjeros puedes pasar a la siguiente granja y vivir un día más. Ve de granja en graja y comete los huevos de los granjeros. ¡Ve a por ello!"
+
+# Dividir el mensaje de sinopsis en líneas basadas en el ancho máximo
+lineas_sinopsis = []
+linea_actual = ""
+ancho_maximo = 500  # Ancho máximo para cada línea
+
+for palabra in mensaje_sinopsis.split():
+    if fuente1.size(linea_actual + palabra + " ")[0] <= ancho_maximo:
+        linea_actual += palabra + " "
+    else:
+        lineas_sinopsis.append(linea_actual)
+        linea_actual = palabra + " "
+
+# Agregar la última línea
+if linea_actual:
+    lineas_sinopsis.append(linea_actual)
+
+# Calcular la altura total necesaria para renderizar todas las líneas de sinopsis
+altura_total = fuente1.get_height() * len(lineas_sinopsis)
+
+ventana.blit(fondo_sinopsis, (0, 0))  # Dibujar imagen de fondo
+
+# Renderizar cada línea de sinopsis y dibujar en la ventana
+for i, linea in enumerate(lineas_sinopsis):
+    mensaje_sinopsis = fuente1.render(linea, True, BLANCO)
+    posicion_y = ALTO // 2 - altura_total // 2 + i * fuente1.get_height()
+    ventana.blit(mensaje_sinopsis, (ANCHO // 2 - mensaje_sinopsis.get_width() // 2, posicion_y))
+
+pygame.display.update()
+
+# Mostrar mensaje de:
+mensaje_continuar = "Presione una tecla para continuar..."
+mensaje_continuar_renderizado = fuente1.render(mensaje_continuar, True, BLANCO)
+ventana.blit(mensaje_continuar_renderizado, (ANCHO // 2 - mensaje_continuar_renderizado.get_width() // 2, ALTO // 1.1 - mensaje_continuar_renderizado.get_height() // 2))
+pygame.display.update()
+
+# Esperar a que se presione una tecla para continuar
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            # Cambiar al siguiente mensaje
+            siguiente_mensaje = True
+            break
+    else:
+        continue
+    break
+
+                        
+
+                        #INSTRUCCIONES
+
+
+# Cargar imagen de fondo para las instrucciones
+fondo_instrucciones = pygame.image.load("PACKLIKE3.png")
+fondo_instrucciones = pygame.transform.scale(fondo_instrucciones, (ANCHO, ALTO))
+
+
+# Título de las instrucciones
+titulo_instrucciones = "Instrucciones:"
+titulo_renderizado = fuente1.render(titulo_instrucciones, True, BLANCO)
+
+# Instrucciones del juego
+mensaje_instrucciones = "Ten cuidado con los muros, si los tocas pierdes vitalidad y solo tienes 3, si llegas a 0, mueres. ¡Suerte!"
+
+# Dividir el mensaje de sinopsis en líneas basadas en el ancho máximo
+lineas_instrucciones = []
+linea_actual2 = ""
+ancho_maximo2 = 500  # Ancho máximo para cada línea
+
+for palabra in mensaje_instrucciones.split():
+    if fuente1.size(linea_actual2 + palabra + " ")[0] <= ancho_maximo2:
+        linea_actual2 += palabra + " "
+    else:
+        lineas_instrucciones.append(linea_actual2)
+        linea_actual2 = palabra + " "
+
+# Agregar la última línea
+if linea_actual2:
+    lineas_instrucciones.append(linea_actual2)
+
+# Calcular la altura total necesaria para renderizar todas las líneas de sinopsis
+altura_total = fuente1.get_height() * len(lineas_instrucciones)
+
+ventana.blit(fondo_instrucciones, (0, 0))  # Dibujar imagen de fondo
+
+# Posición del título
+posicion_y_titulo = ALTO // 4 - titulo_renderizado.get_height() // 2
+ventana.blit(titulo_renderizado, (ANCHO // 2 - titulo_renderizado.get_width() // 2, posicion_y_titulo))
+
+# Posición inicial del mensaje de instrucciones debajo del título
+posicion_y_mensaje = posicion_y_titulo + titulo_renderizado.get_height() + 30  # Ajusta el valor 20 según el espacio deseado
+
+# Renderizar cada línea de sinopsis y dibujar en la ventana
+for i, linea in enumerate(lineas_instrucciones):
+    mensaje_instrucciones = fuente1.render(linea, True, BLANCO)
+    posicion_y = posicion_y_mensaje + i * fuente1.get_height()
+    ventana.blit(mensaje_instrucciones, (ANCHO // 2 - mensaje_instrucciones.get_width() // 2, posicion_y))
+
+pygame.display.update()
+
+
+# Mostrar mensaje de:
+mensaje_continuar = "¡Presione una tecla para jugar!"
+mensaje_continuar_renderizado = fuente1.render(mensaje_continuar, True, BLANCO)
+ventana.blit(mensaje_continuar_renderizado, (ANCHO // 2 - mensaje_continuar_renderizado.get_width() // 2, ALTO // 1.1 - mensaje_continuar_renderizado.get_height() // 2))
+pygame.display.update()
+
+# Esperar a que se presione una tecla para continuar
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            # Cambiar al siguiente mensaje
+            siguiente_mensaje = True
+            break
+    else:
+        continue
+    break
+
+
+
+                                    #HASTA ACA SINOPSIS Y DEMAS
+
+
+
+
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN or event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+
+    # Bucle principal
+    jugando = True
+    while jugando:
+
+        reloj.tick(60)
+
+        # Eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                jugando = False
+                juego_en_curso = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    jugando = False
+                    juego_en_curso = False
+                if event.key == pygame.K_RIGHT:
+                    jugador_rect_vel_x = 10
+                    direccion = 1
+                if event.key == pygame.K_LEFT:
+                    jugador_rect_vel_x = -10
+                    direccion = 2
+                if event.key == pygame.K_DOWN:
+                    jugador_rect_vel_y = 10
+                    direccion = 3
+                if event.key == pygame.K_UP:
+                    jugador_rect_vel_y = -10
+                    direccion = 4
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_RIGHT:
+                    jugador_rect_vel_x = 0
+                if event.key == pygame.K_LEFT:
+                    jugador_rect_vel_x = 0
+                if event.key == pygame.K_DOWN:
+                    jugador_rect_vel_y = 0
+                if event.key == pygame.K_UP:
+                    jugador_rect_vel_y = 0        
+
+        # Lógica
+        if direccion==1:
+            jugador_img = jugador_der
+        if direccion==2:
+            jugador_img = jugador_izq
+        if direccion==3:
+            jugador_img = jugador_aba
+        if direccion==4:
+            jugador_img = jugador_arr
+
+        jugador_rect.x += jugador_rect_vel_x
+        jugador_rect.y += jugador_rect_vel_y
+
+        if jugador_rect.x > ANCHO - jugador_rect.width:
+            jugador_rect.x = ANCHO - jugador_rect.width
+        if jugador_rect.x < 0:
+            jugador_rect.x = 0
+        if jugador_rect.y > ALTO - jugador_rect.height:
+            jugador_rect.y = ALTO - jugador_rect.height
+        if jugador_rect.y < 0:
+            jugador_rect.y = 0
+
+        for muro in muros:
+            if jugador_rect.colliderect(muro):
+                jugador_rect.x -= 5 * jugador_rect_vel_x
+                jugador_rect.y -= 5 * jugador_rect_vel_y
+                vidas = actualizar_vidas(vidas)
+                if vidas == 0:
+                    jugador_rect_vel_x = 0
+                    jugador_rect_vel_x = 0
+                    jugador_rect_vel_y = 0
+                    jugador_rect_vel_y = 0
+                    fondo_perder = pygame.image.load("fondotres.png")
+                    ventana.blit(fondo_perder, (0, 0))  # Dibujar imagen de fondo
+
+                    mensaje_perder = "¡PERDISTE!"
+                    mensaje_perder_renderizado = fuente1.render(mensaje_perder, True, BLANCO)
+                    ventana.blit(mensaje_perder_renderizado, (ANCHO // 2 - mensaje_perder_renderizado.get_width() // 2, ALTO // 4 - mensaje_perder_renderizado.get_height() // 2))
+                    
+                    mensaje_perder = "Unos ganan, otros pierden, y a ti te tocó perder, viejo. A causa de eso, nuestro lagartito entró en depresión :("
+
+                    # Dividir el mensaje de perder en líneas basadas en el ancho máximo
+                    lineas_perder = []
+                    linea_actual = ""
+                    ancho_maximo = 500  # Ancho máximo para cada línea
+
+
+                    for palabra in mensaje_perder.split():
+                        if fuente1.size(linea_actual + palabra + " ")[0] <= ancho_maximo:
+                            linea_actual += palabra + " "
+                        else:
+                            lineas_perder.append(linea_actual)
+                            linea_actual = palabra + " "
+
+                    # Agregar la última línea
+                    if linea_actual:
+                        lineas_perder.append(linea_actual)
+
+                    # Calcular la altura total necesaria para renderizar todas las líneas de perder
+                    altura_total = fuente1.get_height() * len(lineas_perder)
+
+
+                    # Renderizar cada línea de perder y dibujar en la ventana
+                    for i, linea in enumerate(lineas_perder):
+                        mensaje_perder = fuente1.render(linea, True, BLANCO)
+                        posicion_y = ALTO // 2 - altura_total // 2 + i * fuente1.get_height()
+                        ventana.blit(mensaje_perder, (ANCHO // 2 - mensaje_perder.get_width() // 2, posicion_y))
+
+            
+                    # Mostrar mensaje de "Presione una tecla para continuar"
+                    mensaje_continuar = "¿Quiere volver a jugar? Presione S (sí) o N (no)"
+                    mensaje_continuar_renderizado = fuente1.render(mensaje_continuar, True, BLANCO)
+                    ventana.blit(mensaje_continuar_renderizado, (ANCHO // 2 - mensaje_continuar_renderizado.get_width() // 2, ALTO // 1.1 - mensaje_continuar_renderizado.get_height() // 2))
+                    pygame.display.update()
+
+                    # Esperar a que se presione una tecla para continuar
+                    while True:
+                        for event in pygame.event.get():
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_s or event.key == pygame.K_S:
+                                    # Volver a ejecutar el juego
+                                    juego_en_curso = True
+                                    vidas=3
+                                    nivel_actual=1
+                                    jugador_rect_vel_x = 0
+                                    jugador_rect_vel_x = 0
+                                    jugador_rect_vel_y = 0
+                                    jugador_rect_vel_y = 0
+                                elif event.key == pygame.K_n or event.key == pygame.K_N:
+                                    # Finalizar el juego
+                                    juego_en_curso = False
+                                break
+                        else:
+                            continue
+                        break
                 
+        if jugador_rect.colliderect(comida_rect):
+            nivel_actual += 1
+            if nivel_actual <= len(mapas):
+                mapa_actual = mapas[nivel_actual - 1]
+                muros = construir_mapa(mapa_actual)
+                generar_posicion_comida(muros)
+                
+                jugador_rect = pygame.Rect(100, 100, 40, 40)
+                jugador_rect_vel_x = 0
+                jugador_rect_vel_y = 0
+            else:
+                jugando = False
 
-            #fps
-            reloj1.tick(20)
-            #FPS=20
-            #Lógica
-            pn_x += vn_x
-            pn_y += vn_y
+            if nivel_actual>5:
+                jugador_rect_vel_x = 0
+                jugador_rect_vel_x = 0
+                jugador_rect_vel_y = 0
+                jugador_rect_vel_y = 0
+                fondo_perder = pygame.image.load("fondotres.png")
+                ventana.blit(fondo_perder, (0, 0))  # Dibujar imagen de fondo
 
-            #color de la ventana
-            ventana.fill(ROJO)
+                mensaje_perder = "¡GANASTE!"
+                mensaje_perder_renderizado = fuente1.render(mensaje_perder, True, BLANCO)
+                ventana.blit(mensaje_perder_renderizado, (ANCHO // 2 - mensaje_perder_renderizado.get_width() // 2, ALTO // 4 - mensaje_perder_renderizado.get_height() // 2))
 
-            #Dibujar en pantalla
-            pygame.draw.rect(ventana,VERDE,(pn_x,pn_y,20,20))
-            #pygame.draw.rect(ventana,AZUL,r2)
-            pygame.draw.polygon(ventana,BLANCO,((24,24),(26,24),(26,34),(27,34),
-                                                (25,37),(23,34),(24,34),))
-            pygame.draw.polygon(ventana,AZUL,((50,0),(50,150),(150,150),(150,200),
-                                              (200,200),(200,100),(100,100),(100,50),
-                                              (200,50),(400,50),(400,0)))
-            #refresh de la ventana
-            pygame.display.update()
+                mensaje_ganar = "¡Lo lograste! Ahora nuestro pequeño lagarto podrá reencontrarse con el amor de su vida :D"
 
-        #codigo finalizado
-        pygame.quit()
+                # Dividir el mensaje de ganar en líneas basadas en el ancho máximo
+                lineas_ganar = []
+                linea_actual = ""
+                ancho_maximo = 500  # Ancho máximo para cada línea
 
-    main()
+
+                for palabra in mensaje_ganar.split():
+                    if fuente1.size(linea_actual + palabra + " ")[0] <= ancho_maximo:
+                        linea_actual += palabra + " "
+                    else:
+                        lineas_ganar.append(linea_actual)
+                        linea_actual = palabra + " "
+
+                # Agregar la última línea
+                if linea_actual:
+                    lineas_ganar.append(linea_actual)
+
+                # Calcular la altura total necesaria para renderizar todas las líneas de ganar
+                altura_total = fuente1.get_height() * len(lineas_ganar)
+
+
+                # Renderizar cada línea de ganar y dibujar en la ventana
+                for i, linea in enumerate(lineas_ganar):
+                    mensaje_ganar = fuente1.render(linea, True, BLANCO)
+                    posicion_y = ALTO // 2 - altura_total // 2 + i * fuente1.get_height()
+                    ventana.blit(mensaje_ganar, (ANCHO // 2 - mensaje_ganar.get_width() // 2, posicion_y))
+
+                # Mostrar mensaje de "Presione una tecla para continuar"
+                mensaje_continuar = "¿Quiere volver a jugar? Presione S (sí) o N (no)"
+                mensaje_continuar_renderizado = fuente1.render(mensaje_continuar, True, BLANCO)
+                ventana.blit(mensaje_continuar_renderizado, (ANCHO // 2 - mensaje_continuar_renderizado.get_width() // 2, ALTO // 1.1 - mensaje_continuar_renderizado.get_height() // 2))
+                pygame.display.update()
+
+                # Esperar a que se presione una tecla para continuar
+                while True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_s or event.key == pygame.K_S:
+                                # Volver a ejecutar el juego
+                                juego_en_curso = True
+                                vidas=3
+                                nivel_actual=0
+                                jugador_rect_vel_x = 0
+                                jugador_rect_vel_x = 0
+                                jugador_rect_vel_y = 0
+                                jugador_rect_vel_y = 0
+                                mapa_actual = mapas[nivel_actual - 1]
+                                muros = construir_mapa(mapa_actual)
+                            elif event.key == pygame.K_n or event.key == pygame.K_N:
+                                # Finalizar el juego
+                                juego_en_curso = False
+                            break
+                    else:
+                        continue
+                    break
+        # Dibujos
+
+        ventana.blit(fondo, (0, 0))
+        dibujar_muros(ventana, muros)
+        #mostrar vidas actualizadas
+        dibujar_vidas()
+
+        ventana.blit(texto, (570, 20))  # título del videojuego
+        comida_rect.topleft = (comida_rect.x, comida_rect.y)
+        ventana.blit(comida_img, comida_rect)
+
+        # Dibujar imagen en lugar del rectángulo verde
+        jugador_rect.topleft = (jugador_rect.x, jugador_rect.y)  # ESTO TAMBIEN
+        ventana.blit(jugador_img, jugador_rect)
+
+        # Mostrar nivel actual en el tablero
+        nivel_texto = fuente1.render("Nivel: " + str(nivel_actual), True, BLANCO)
+        ventana.blit(nivel_texto, (20, 20))
+
+
+        # Actualizar
+        pygame.display.update()
+        reloj.tick(60)
+
+
+    # Cargar imagen de fondo
+    fondo_final = pygame.image.load("fondotres.png")
+
+    # Juego finalizado
+        
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN or event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
